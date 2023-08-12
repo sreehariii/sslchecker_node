@@ -1,0 +1,35 @@
+
+doctype html
+html 
+    title #{title}
+    link(rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous')
+    body 
+        div.container.text-center 
+            h1.h1.py-4(style='text-align: left;') SSL Checker
+            p.card-block(style='text-align: left;')
+                m.card-text
+                | SSL Checker helps you to quickly verify the SSL certificate configured on a web server. It decodes the certificate and provide you the details of the certificate.
+        div.container.text-center 
+            form(method='POST', action='/sslresults')
+                div.form-group(style='text-align: left;')
+                    label(for='url') 
+                    h5 Enter URL:
+                    input#url.form-control(type='text' , name='url' , class='form-label', aria-describedby='emailHelp', value='',  placeholder='www.sap.com')
+                    <!--input(type='text',name='url',class='form-label',value='',placeholder='www.sap.com')-->
+                div.form-group(style='text-align: left;')
+                    input(type='submit',class='btn btn-primary',value='Check SSL')
+        
+        div.container.text-center 
+            h1.h1.py-4(style='text-align: left;') Certificate Decoder
+            p.card-block(style='text-align: left;')
+                m.card-text
+                | Use this Certificate Decoder to decode your PEM encoded SSL certificate and verify that it contains the correct information. 
+        div.container.text-center 
+            form(method='POST', action='/decoder')
+                div.form-group(style='text-align: left;')
+                    label(for='cert')
+                    h5 Paste the PEM certificate content:
+                    textarea#cert.form-control(type='text' , name='cert' , class='form-label', rows='10', value='',  placeholder='-----BEGIN CERTIFICATE-----\nMIIG6jCCBdKgAwIBAgIQDcCyQTPAuzUIigTNGs9AXzANBgkqhkiG9w0BAQsFADBE\n-----END CERTIFICATE-----')
+                    <!--input(type='text',name='url',class='form-label',value='',placeholder='www.sap.com')-->
+                div.form-group(style='text-align: left;')
+                    input(type='submit',class='btn btn-primary',value='Decode')
