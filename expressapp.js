@@ -5,6 +5,7 @@ const PORT = process.env.PORT || 3000
 const fs = require("fs")
 const crypto = require("crypto")
 
+
 app.set("views", path.join(__dirname, "views"))
 app.set("view engine", "pug")
 
@@ -42,9 +43,9 @@ const getCertExpiry = (host, port, servername) => {
 }
 
 const checkCertExpiration = async (host, port = 443, servername = host) => {
-  const { remoteip,validTo, peerCert } = await getCertExpiry(host, port, servername)
+  const { remoteip, validTo, peerCert } = await getCertExpiry(host, port, servername)
   const remainingDays = getRemainingDays(validTo)
-  return { remoteip,validTo, remainingDays, peerCert }
+  return { remoteip, validTo, remainingDays, peerCert }
 }
 
 
@@ -56,41 +57,75 @@ app.use(express.urlencoded({
 app.get('/', (req, res) => {
   res.render("index", { title: "SSL Checker" })
 })
+app.get('/decoder', (req, res) => {
+  res.render("index", { title: "SSL Checker" })
+})
+app.get('/sslresults', (req, res) => {
+  res.render("index", { title: "SSL Checker" })
+})
 
+app.post("/decoder", (req, res) => {
+  try {
+    let pemcert = req.body.cert
+    if (!pemcert.startsWith("-----")){
+      let buff = Buffer.from(pemcert, 'base64');
+      var prefix = '-----BEGIN CERTIFICATE-----\n';
+      var postfix = '-----END CERTIFICATE-----';
+      var pemText = prefix + buff.toString('base64').match(/.{0,64}/g).join('\n') + postfix;
+      pemcert = pemText
+    }
+    const cert = new crypto.X509Certificate((pemcert))
+    let subjects = (cert.subject)
+    //console.log(subjects.replaceAll('\n', ',')) 
+    newobj = subjects.replaceAll('\n', ', ')
+    const remainingDays = getRemainingDays(cert.validTo)
+    if (cert.subjectAltName){
+      SANs = cert.subjectAltName.replaceAll('DNS:', '')
+    }else {
+      SANs = cert.subjectAltName
+    }
+    let decodedinfo = {
+      "subject": newobj,
+      "san": SANs,
+      "issuer": cert.issuer,
+      "validfrom": cert.validFrom,
+      "validuntill": cert.validTo,
+      "daysleft": remainingDays,
+      "fingerprint": cert.fingerprint,
+      "serialNumber": cert.serialNumber
+    }
+    res.render("decoderesult", { title: "Certificate Decoder Results", resultes: decodedinfo })
 
-
-
-app.post("/decoder", (req,res)=>{
-  try{
-  const pemcert = req.body.cert
-  const cert = new crypto.X509Certificate((pemcert))
-  let subjects = (cert.subject)
-  //console.log(subjects.replaceAll('\n', ',')) 
-  newobj = subjects.replaceAll('\n', ', ')
-  const remainingDays = getRemainingDays(cert.validTo)
-  let decodedinfo = { "subject" : newobj,
-          "san": cert.subjectAltName.replaceAll('DNS:', ''),
-          "issuer" : cert.issuer,
-          "validfrom" : cert.validFrom,
-          "validuntill" : cert.validTo,
-          "daysleft" : remainingDays,
-          "fingerprint" : cert.fingerprint,
-          "serialNumber" : cert.serialNumber
-          }
-          res.render("decoderesult", { title: "Certificate Decoder Results" ,resultes: decodedinfo })
-        
-  }catch (err){
-    errorobj = {"error":err}
-    res.render("decodeerror", { title: "Certificate Decoder Results" ,resultes: errorobj })
+  } catch (err) {
+    errorobj = { "error": err }
+    res.render("decodeerror", { title: "Certificate Decoder Results", resultes: errorobj })
   }
-        }
-        )
+}
+)
+
+function extractHostname(url) { /// this is to format the url
+  var hostname;
+  //find & remove protocol (http, ftp, etc.) and get hostname
+
+  if (url.indexOf("//") > -1) {
+    hostname = url.split('/')[2];
+  } else {
+    hostname = url.split('/')[0];
+  }
+
+  //find & remove port number
+  hostname = hostname.split(':')[0];
+  //find & remove "?"
+  hostname = hostname.split('?')[0];
+  //console.log(hostname)
+  return hostname;
+}
 
 
-
-       
 app.post("/sslresults", (req, res) => {
-  const url = req.body.url
+  const notformattedurl = req.body.url
+  formattedurl = extractHostname(notformattedurl)
+  console.log("SSL Check Requested for domain: ", formattedurl)
   const main = async (hosts) => {
     const domains = hosts
     const tasks = domains.map(domain => checkCertExpiration(domain))
@@ -134,15 +169,15 @@ app.post("/sslresults", (req, res) => {
         }
         //console.log(obj1)
         //res.setHeader('Content-Type', 'application/json');
-        res.render("resultpug", { title: "SSL Checker results" ,resultes: obj1 })
+        res.render("resultpug", { title: "SSL Checker results", resultes: obj1 })
       } else {
         console.error(`Error checking ${domains[i]}: ${result.reason}`)
-        errorobj = {"error":result.reason}
-        res.render("errorresultpug", { title: "SSL Checker results" ,resultes: errorobj })
+        errorobj = { "error": result.reason }
+        res.render("errorresultpug", { title: "SSL Checker results", resultes: errorobj })
       }
     }
   }
-  main([url])
+  main([formattedurl])
 
 })
 app.listen(PORT, () => {
