@@ -25,6 +25,9 @@ html
 
             p.card-block(style='text-align: left;')
                     m.card-text
+                    strong CN:
+                    |  #{resultes.domaininfo.CN} 
+                    br
                     strong SANs:
                     |  #{resultes.domaininfo.san} 
                     br
@@ -70,7 +73,7 @@ html
                         br
                         strong Serialnumber: 
                         | #{result.serialNumber}
-                        
+
         div.container.text-center 
             h1.h1.py-4(style='text-align: left;') Certificate Decoder
             p.card-block(style='text-align: left;')
